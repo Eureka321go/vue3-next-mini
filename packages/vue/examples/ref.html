@@ -1,0 +1,28 @@
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <script src="../../vue/dist/vue.esm.js"></script>
+</head>
+<body>
+    <div id="app">
+    </div>
+     <div id="app2">
+    </div>
+    <script>
+        const { ref, effect } = Vue
+        const obj = ref({name: "小明"})
+        const string = ref('你好')
+        console.log(string);
+        effect(() => {
+            document.getElementById('app').innerText = obj.value.name
+        })
+        effect(() => {
+            document.getElementById('app2').innerText = string.value
+        })
+        setTimeout(()=>{
+            obj.value.name = "小周"
+            string.value = "你好呀"
+            console.log(string.value)
+        }, 2000)
+    </script>
+</body>

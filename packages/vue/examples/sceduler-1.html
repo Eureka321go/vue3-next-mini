@@ -1,0 +1,30 @@
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <script src="../../vue/dist/vue.esm.js"></script>
+</head>
+<body>
+    <div id="app">
+    </div>
+     <div id="app2">
+    </div>
+    <script>
+        const { reactive, effect, computed, queuePreFlushCb } = Vue
+        const obj = reactive({count: 1})
+        effect(() => {
+            console.log(obj.count);
+        }, {
+            scheduler () {
+                queuePreFlushCb(()=>{
+                    console.log(obj.count)
+                })
+                // setTimeout(()=>{
+                //     console.log(obj.count);
+                // })
+            }
+        })
+        obj.count = 2
+        obj.count = 3
+        console.log("代码结束");
+    </script>
+</body>

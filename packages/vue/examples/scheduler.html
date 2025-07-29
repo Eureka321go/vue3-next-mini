@@ -1,0 +1,31 @@
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <script src="../../vue/dist/vue.esm.js"></script>
+</head>
+<body>
+    <div id="app">
+    </div>
+     <div id="app2">
+    </div>
+    <script>
+        const { reactive, effect, computed } = Vue
+        const obj = reactive({name: "小明"})
+        const allName = computed(() => {
+            return "姓名：" + obj.name
+        })
+        console.log(obj);
+        effect(() => {
+            document.getElementById('app').innerText = allName.value
+        }, {
+            scheduler () {
+                setTimeout(()=>{
+                    console.log(obj)
+                })
+            }
+        })
+        setTimeout(()=>{
+            obj.name = "小周"
+        }, 2000)
+    </script>
+</body>

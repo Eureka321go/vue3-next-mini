@@ -1,0 +1,5 @@
+export { reactive } from '@vue/reactivity'
+export { effect } from '@vue/reactivity'
+export { ref } from '@vue/reactivity'
+export { computed } from '@vue/reactivity'
+export { queuePreFlushCb, watch } from '@vue/runtime-core'

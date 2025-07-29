@@ -1,0 +1,25 @@
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <script src="../../vue/dist/vue.esm.js"></script>
+</head>
+<body>
+    <div id="app">
+    </div>
+     <div id="app2">
+    </div>
+    <script>
+        const { reactive, effect } = Vue
+        const obj = reactive({name: "小明"})
+        console.log(obj);
+        effect(() => {
+            document.getElementById('app').innerText = obj.name
+        })
+        effect(() => {
+            document.getElementById('app2').innerText = obj.name
+        })
+        setTimeout(()=>{
+            obj.name = "小周"
+        }, 2000)
+    </script>
+</body>

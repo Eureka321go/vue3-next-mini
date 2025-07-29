@@ -1,0 +1,22 @@
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <script src="../../vue/dist/vue.esm.js"></script>
+</head>
+<body>
+    <div id="app">
+    </div>
+     <div id="app2">
+    </div>
+    <script>
+        const { reactive, effect, computed, queuePreFlushCb, watch } = Vue
+        const obj = reactive({count: 1})
+        watch(obj, (newValue, oldValue) => {
+            console.log(newValue, oldValue);
+        }, {
+            immediate: true
+        })
+        obj.count = 3
+        console.log("代码结束");
+    </script>
+</body>

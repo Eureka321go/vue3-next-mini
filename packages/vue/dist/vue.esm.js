@@ -67,6 +67,7 @@ var Vue = (function (exports) {
     var isFunction = function (val) { return typeof val === 'function'; };
     var extend = Object.assign;
     var EMPTY_OBJ = {};
+    var isString = function (val) { return typeof val === 'string'; };
 
     var createDep = function (effects) {
         return new Set(effects);
@@ -360,8 +361,108 @@ var Vue = (function (exports) {
         return value;
     }
 
+    function normalizeClass(value) {
+        var res = '';
+        if (isString(value)) {
+            res = value;
+        }
+        else if (isArray(value)) {
+            for (var i = 0; i < value.length; i++) {
+                var normalize = normalizeClass(value[i]);
+                if (normalize) {
+                    res += normalize + " ";
+                }
+            }
+        }
+        else if (isObject(value)) {
+            for (var key in value) {
+                if (value[key]) {
+                    res += key + " ";
+                }
+            }
+        }
+        return res.trim();
+    }
+
+    var Text = Symbol('text');
+    var Fragment = Symbol('Fragment');
+    var Comment = Symbol('Comment');
+    function isVNode(value) {
+        return (value ? value.__V_isVNode : false);
+    }
+    function createVNode(type, props, children) {
+        var shapeFlag = isString(type)
+            ? 1
+            : isObject(type)
+                ? 4
+                : 0;
+        if (props) {
+            var klass = props.class; props.style;
+            if (klass && !isString(klass)) {
+                props.class = normalizeClass(klass);
+            }
+        }
+        return createBaseVNode(type, props, children, shapeFlag);
+    }
+    function createBaseVNode(type, props, children, shapeFlag) {
+        var VNode = {
+            __V_isVNode: true,
+            type: type,
+            props: props,
+            shapeFlag: shapeFlag,
+        };
+        normalizeChildren(VNode, children);
+        return VNode;
+    }
+    function normalizeChildren(vnode, children) {
+        var type = 0;
+        vnode.shapeFlag;
+        if (children == null) {
+            children = null;
+        }
+        else if (isArray(children)) {
+            type = 16;
+        }
+        else if (typeof children === 'object') ;
+        else if (isFunction(children)) ;
+        else {
+            children = String(children);
+            type = 8;
+        }
+        vnode.children = children;
+        vnode.shapeFlag |= type;
+    }
+
+    function h(type, propsOrChildren, children) {
+        var l = arguments.length;
+        if (l === 2) {
+            if (isObject(propsOrChildren) && !Array.isArray(propsOrChildren)) {
+                if (isVNode(propsOrChildren)) {
+                    return createVNode(type, null, [propsOrChildren]);
+                }
+                return createVNode(type, propsOrChildren, []);
+            }
+            else {
+                return createVNode(type, null, propsOrChildren);
+            }
+        }
+        else {
+            if (l > 3) {
+                children = Array.prototype.slice.call(arguments, 2);
+            }
+            else if (l === 3 && isVNode(children)) {
+                children = [children];
+            }
+            return createVNode(type, propsOrChildren, children);
+        }
+    }
+
+    exports.Comment = Comment;
+    exports.Fragment = Fragment;
+    exports.Text = Text;
     exports.computed = computed;
     exports.effect = effect;
+    exports.h = h;
     exports.queuePreFlushCb = queuePreFlushCb;
     exports.reactive = reactive;
     exports.ref = ref;

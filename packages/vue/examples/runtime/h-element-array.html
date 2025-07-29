@@ -1,0 +1,28 @@
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <script src="../../../vue/dist/vue.esm.js"></script>
+</head>
+<body>
+<div id="app">
+</div>
+<div id="app2">
+</div>
+<script>
+  const {h} = Vue
+  const vNode = h('div',{
+    class: 'test'
+  }, [
+    h('span',{
+      class: 'test2'
+    }, '这是一个span'),
+    h('span',{
+      class: 'test3'
+    }, '这是一个span2'),
+    h('span',{
+      class: 'test4'
+    }, '这是一个span3'),
+  ])
+  console.log(vNode)
+</script>
+</body>

@@ -1,0 +1,20 @@
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <script src="../../../vue/dist/vue.esm.js"></script>
+</head>
+<body>
+<div id="app">
+</div>
+<div id="app2">
+</div>
+<script>
+  const {h,Text,Comment,Fragment} = Vue
+  const vNode1 = h(Text, 'hello Text')
+  console.log(vNode1)
+  const vNode2 = h(Comment, 'hello Comment')
+  console.log(vNode2)
+  const vNode3 = h(Fragment, 'hello Fragment')
+  console.log(vNode3)
+</script>
+</body>

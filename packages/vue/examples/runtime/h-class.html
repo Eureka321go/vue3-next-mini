@@ -1,0 +1,24 @@
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <script src="../../../vue/dist/vue.esm.js"></script>
+</head>
+<body>
+<div id="app">
+</div>
+<div id="app2">
+</div>
+<script>
+  const {h} = Vue
+  const vnode1 = h('div', {
+    class: 'helloClass',
+  }, 'haha1')
+  const vnode2 = h('div', {
+    class: [
+      'helloClass1',
+      'helloClass2'
+    ],
+  }, 'haha2')
+  console.log(vnode1, vnode2)
+</script>
+</body>

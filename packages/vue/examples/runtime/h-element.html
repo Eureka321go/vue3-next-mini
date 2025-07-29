@@ -1,0 +1,18 @@
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <script src="../../../vue/dist/vue.esm.js"></script>
+</head>
+<body>
+<div id="app">
+</div>
+<div id="app2">
+</div>
+<script>
+  const {h} = Vue
+  const vNode = h('div',{
+    class: 'test'
+  }, 'hello render')
+  console.log(vNode)
+</script>
+</body>

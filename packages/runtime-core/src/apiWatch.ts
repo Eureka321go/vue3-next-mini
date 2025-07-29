@@ -19,9 +19,10 @@ function doWatch(source, cb: Function, {immediate, deep}: WatchOption = EMPTY_OB
     } else {
         getter = () => {}
     }
-    if (cb && deep) { 
-        // 这里递归调用触发getter进行依赖收集
+    if (cb && deep) {
+        // 递归访问所有属性
         const baseGetter = getter
+        // 这里是个getter函数
         getter = () => traverse(baseGetter())
     }
 
@@ -45,14 +46,17 @@ function doWatch(source, cb: Function, {immediate, deep}: WatchOption = EMPTY_OB
         if(immediate){
             job()
         } else {
-            oldValue = effect.run()
+            oldValue = effect.run() // 这里触发依赖收集
+            //执行 getter 时访问响应式属性，触发 track 流程
         }
     }
     return () => {
         effect.stop()
     }
 }
-
+// 被监听数据 (source) 的 dep → 包含 watch 的 effect
+// ↓
+// 当 source 变化 → 触发 effect.scheduler() → 加入微任务队列 → 执行回调
 export function traverse (value: unknown) {
     if (!isObject(value)) {
       return value

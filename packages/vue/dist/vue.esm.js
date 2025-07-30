@@ -68,6 +68,9 @@ var Vue = (function (exports) {
     var extend = Object.assign;
     var EMPTY_OBJ = {};
     var isString = function (val) { return typeof val === 'string'; };
+    var isOn = function (key) {
+        return /^on/.test(key);
+    };
 
     var createDep = function (effects) {
         return new Set(effects);
@@ -384,9 +387,12 @@ var Vue = (function (exports) {
         return res.trim();
     }
 
-    var Text = Symbol('text');
+    var Text$1 = Symbol('text');
     var Fragment = Symbol('Fragment');
     var Comment = Symbol('Comment');
+    function isSameVNodeType(oldVNode, newVNode) {
+        return oldVNode.type === newVNode.type && oldVNode.key === newVNode.key;
+    }
     function isVNode(value) {
         return (value ? value.__V_isVNode : false);
     }
@@ -457,15 +463,331 @@ var Vue = (function (exports) {
         }
     }
 
+    function normalizeVNode(child) {
+        if (typeof child === 'object') {
+            return cloneIfMounted(child);
+        }
+        else {
+            return createVNode(Text, null, String(child));
+        }
+    }
+    function cloneIfMounted(child) {
+        return child;
+    }
+
+    function createRenderer(options) {
+        return baseCreateRenderer(options);
+    }
+    function baseCreateRenderer(options) {
+        var hostPatchProps = options.patchProp, hostSetElementText = options.setElementText, hostInsert = options.insert, hostCreateElement = options.createElement, hostRemove = options.remove, hostCreateText = options.createText, hostSetText = options.setText, hostCreateComment = options.createComment;
+        var unmount = function (vnode) {
+            hostRemove(vnode.el);
+        };
+        var processComment = function (oldVNode, newVNode, container, anchor) {
+            if (oldVNode == null) {
+                newVNode.el = hostCreateComment(newVNode.children);
+                hostInsert(newVNode.el, container, anchor);
+            }
+            else {
+                newVNode.el = oldVNode.el;
+            }
+        };
+        var processFragment = function (oldVNode, newVNode, container, anchor) {
+            if (oldVNode == null) {
+                mountChildren(newVNode.children, container, anchor);
+            }
+            else {
+                patchChildren(oldVNode, newVNode, container);
+            }
+        };
+        var processText = function (oldVNode, newVNode, container, anchor) {
+            if (oldVNode == null) {
+                newVNode.el = hostCreateText(newVNode.children);
+                hostInsert(newVNode.el, container, anchor);
+            }
+            else {
+                var el = (newVNode.el = oldVNode.el);
+                if (newVNode.children !== oldVNode.children) {
+                    hostSetText(el, newVNode.children);
+                }
+            }
+        };
+        var processElement = function (oldVNode, newVNode, container, anchor) {
+            if (anchor === void 0) { anchor = null; }
+            if (oldVNode === newVNode) {
+                return;
+            }
+            if (oldVNode == null) {
+                mountElement(newVNode, container, anchor);
+            }
+            else {
+                patchElement(oldVNode, newVNode);
+            }
+        };
+        var patchElement = function (oldVNode, newVNode, container, anchor) {
+            var el = (newVNode.el = oldVNode.el);
+            patchChildren(oldVNode, newVNode, el);
+            var oldProps = oldVNode.props || EMPTY_OBJ;
+            var newProps = newVNode.props || EMPTY_OBJ;
+            patchProps(el, newVNode, oldProps, newProps);
+        };
+        var patchProps = function (el, vnode, oldProps, newProps) {
+            if (oldProps !== newProps) {
+                for (var key in newProps) {
+                    var next = newProps[key];
+                    var prev = oldProps[key];
+                    if (prev !== next) {
+                        hostPatchProps(el, key, prev, next);
+                    }
+                }
+                if (oldProps !== EMPTY_OBJ) {
+                    for (var key in oldProps) {
+                        if (!(key in newProps)) {
+                            hostPatchProps(el, key, oldProps[key], null);
+                        }
+                    }
+                }
+            }
+        };
+        var patchChildren = function (oldVNode, newVNode, container, anchor) {
+            var c1 = oldVNode && oldVNode.children;
+            var c2 = newVNode && newVNode.children;
+            var prevShapeFlag = oldVNode ? oldVNode.shapeFlag : 0;
+            var shapeFlag = newVNode.shapeFlag;
+            if (shapeFlag & 8) {
+                if (c2 !== c1) {
+                    hostSetElementText(container, c2);
+                }
+            }
+            else {
+                if (prevShapeFlag & 16) ;
+                else {
+                    if (prevShapeFlag & 8) {
+                        hostSetElementText(container, '');
+                    }
+                }
+            }
+        };
+        var mountChildren = function (children, container, anchor) {
+            if (isString(children)) {
+                children = children.split('');
+            }
+            for (var i = 0; i < children.length; i++) {
+                var child = (children[i] = normalizeVNode(children[i]));
+                patch(null, child, container, anchor);
+            }
+        };
+        var mountElement = function (vnode, container, anchor) {
+            var type = vnode.type, props = vnode.props, shapeFlag = vnode.shapeFlag;
+            var el = (vnode.el = hostCreateElement(type));
+            if (shapeFlag & 8) {
+                hostSetElementText(el, vnode.children);
+            }
+            if (props) {
+                for (var key in props) {
+                    hostPatchProps(el, key, null, props[key]);
+                }
+            }
+            hostInsert(el, container, anchor);
+        };
+        var patch = function (oldVNode, newVNode, container, anchor) {
+            if (anchor === void 0) { anchor = null; }
+            if (oldVNode === newVNode) {
+                return;
+            }
+            if (oldVNode && !isSameVNodeType(oldVNode, newVNode)) {
+                unmount(oldVNode);
+                oldVNode = null;
+            }
+            var type = newVNode.type, shapeFlag = newVNode.shapeFlag;
+            switch (type) {
+                case Text$1:
+                    processText(oldVNode, newVNode, container, anchor);
+                    break;
+                case Comment:
+                    processComment(oldVNode, newVNode, container, anchor);
+                    break;
+                case Fragment:
+                    processFragment(oldVNode, newVNode, container, anchor);
+                    break;
+                default:
+                    if (shapeFlag & 1) {
+                        processElement(oldVNode, newVNode, container, anchor);
+                    }
+            }
+        };
+        var render = function (vnode, container) {
+            if (vnode == null) {
+                if (container._vnode) {
+                    unmount(container._vnode);
+                }
+            }
+            else {
+                patch(container._vnode, vnode, container);
+            }
+            container._vnode = vnode;
+        };
+        return {
+            render: render
+        };
+    }
+
+    var doc = document;
+    var nodeOps = {
+        insert: function (child, parent, anchor) {
+            parent.insertBefore(child, anchor || null);
+        },
+        createElement: function (tag) {
+            var el = doc.createElement(tag);
+            return el;
+        },
+        setElementText: function (node, text) {
+            node.textContent = text;
+        },
+        remove: function (child) {
+            var parent = child.parentNode;
+            if (parent) {
+                parent.removeChild(child);
+            }
+        },
+        createText: function (text) {
+            return doc.createTextNode(text);
+        },
+        setText: function (node, text) {
+            node.nodeValue = text;
+        },
+        createComment: function (text) {
+            return doc.createComment(text);
+        }
+    };
+
+    function patchClass(el, value) {
+        if (value === null) {
+            el.removeAttribute('class');
+        }
+        else {
+            el.className = value;
+        }
+    }
+
+    function patchDomProp(el, key, value) {
+        try {
+            el[key] = value;
+        }
+        catch (error) {
+            console.log(error);
+        }
+    }
+
+    function patchStyle(el, prev, next) {
+        var style = el.style;
+        var isCssString = isString(next);
+        if (next && !isCssString) {
+            for (var key in next) {
+                setStyle(style, key, next[key]);
+            }
+        }
+        if (prev && !isString(prev)) {
+            for (var key in prev) {
+                if (next[key] == null) {
+                    setStyle(style, key, '');
+                }
+            }
+        }
+    }
+    function setStyle(style, name, value) {
+        if (isString(value)) {
+            style[name] = value;
+        }
+    }
+
+    function patchAttr(el, key, value) {
+        el.setAttribute(key, value);
+    }
+
+    var patchEvent = function (el, rawName, prevValue, nextValue) {
+        var invokers = el._vei || (el._vei = {});
+        var existingInvoker = invokers[rawName];
+        if (nextValue && existingInvoker) {
+            existingInvoker.value = nextValue;
+        }
+        else {
+            var name_1 = parseName(rawName);
+            if (nextValue) {
+                var invoker = (invokers[rawName] = createInvoker(nextValue));
+                el.addEventListener(name_1, invoker);
+            }
+            else if (existingInvoker) {
+                el.removeEventListener(name_1, existingInvoker.value);
+                invokers[rawName] = undefined;
+            }
+        }
+    };
+    function parseName(rawName) {
+        return rawName.slice(2).toLowerCase();
+    }
+    function createInvoker(initalValue) {
+        var invoker = function (e) {
+            invoker.value && invoker.value();
+        };
+        invoker.value = initalValue;
+        return invoker;
+    }
+
+    var patchProp = function (el, key, preValue, nextValue) {
+        if (key === 'class') {
+            patchClass(el, nextValue);
+        }
+        else if (key === 'style') {
+            patchStyle(el, preValue, nextValue);
+        }
+        else if (isOn(key)) {
+            patchEvent(el, key, preValue, nextValue);
+        }
+        else if (shouldSetAsProp(el, key)) {
+            patchDomProp(el, key, nextValue);
+        }
+        else {
+            patchAttr(el, key, preValue);
+        }
+    };
+    function shouldSetAsProp(el, key) {
+        if (key === 'form') {
+            return false;
+        }
+        if (key === 'list' && el.tagName === 'INPUT') {
+            return false;
+        }
+        if (key === 'type' && el.tagName === 'TEXTAREA') {
+            return false;
+        }
+        return key in el;
+    }
+
+    var rendererOptions = extend({ patchProp: patchProp }, nodeOps);
+    var renderer;
+    function ensureRenderer() {
+        return renderer || (renderer = createRenderer(rendererOptions));
+    }
+    var render = function () {
+        var _a;
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        return (_a = ensureRenderer()).render.apply(_a, __spreadArray([], __read(args), false));
+    };
+
     exports.Comment = Comment;
     exports.Fragment = Fragment;
-    exports.Text = Text;
+    exports.Text = Text$1;
     exports.computed = computed;
     exports.effect = effect;
     exports.h = h;
     exports.queuePreFlushCb = queuePreFlushCb;
     exports.reactive = reactive;
     exports.ref = ref;
+    exports.render = render;
     exports.watch = watch;
 
     Object.defineProperty(exports, '__esModule', { value: true });

@@ -1,0 +1,17 @@
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <script src="../../../vue/dist/vue.esm.js"></script>
+</head>
+<body>
+<div id="app">
+</div>
+<script>
+  const {h, render} = Vue
+  const vnode = h('div', {
+    class: 'helloClass',
+  }, 'hello render')
+  render(vnode, document.getElementById('app'))
+</script>
+</body>

@@ -1,0 +1,39 @@
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <script src="../../../vue/dist/vue.esm.js"></script>
+  <style>
+    .active {
+      color: #2e7db9;
+    }
+    .helloClass {
+      color: #ecc797;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+</div>
+<script>
+  const {h, render} = Vue
+  const vnode = h('textarea', {
+    class: 'test-class',
+    value: 'textarea value',
+    style: {
+      color: 'red',
+    }
+  })
+  setTimeout(()=>{
+    const vnode = h('textarea', {
+      class: 'test-class',
+      value: 'textarea value',
+      style: {
+        fontSize: '32px',
+      }
+    })
+    render(vnode, document.getElementById('app'))
+  }, 2000)
+  render(vnode, document.getElementById('app'))
+</script>
+</body>

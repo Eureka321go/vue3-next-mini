@@ -1,0 +1,31 @@
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <script src="../../../vue/dist/vue.esm.js"></script>
+  <style>
+    .active {
+      color: #2e7db9;
+    }
+    .helloClass {
+      color: #ecc797;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+</div>
+<script>
+  const {h, render} = Vue
+  const vnode = h('div', {
+    class: 'helloClass',
+  }, 'hello render')
+  render(vnode, document.getElementById('app'))
+  setTimeout(()=>{
+    const vnode = h('div', {
+
+    }, 'update')
+    render(vnode, document.getElementById('app'))
+  }, 2000)
+</script>
+</body>

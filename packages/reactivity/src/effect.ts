@@ -18,6 +18,10 @@ export interface ReactiveEffectOptions {
 export class ReactiveEffect<T = any> {
     computed?: ComputedRefImpl<T>
     scheduler: EffectScheduler | null = null // 调度器接口
+    // scheduler的作用
+    // 实现批量更新（如 Vue 中的 queueJob）。
+    // 控制副作用执行时机（如在 nextTick 执行，或者防抖、节流）。
+    // 避免不必要的同步执行，提升性能。
     constructor(public fn: () => T,scheduler: EffectScheduler | null = null) {
         this.scheduler = scheduler
     }

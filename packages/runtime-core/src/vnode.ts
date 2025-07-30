@@ -7,13 +7,21 @@ export type VNode = {
     type: any,
     props: any,
     children: any,
-    shapeFlag: number,
+    el: any,
+    key: any,
+    shapeFlag: number, //用 & 或 | 进行判断/组合
+    // 用位掩码标记 VNode 和子节点类型。
+    // 通过 |（合并）、&（判断）快速确定节点处理逻辑。
+    // 让 patch/渲染过程可以快速分支，提高运行时性能。
 }
 
 export const Text = Symbol('text')
 export const Fragment = Symbol('Fragment')
 export const Comment = Symbol('Comment')
 
+export function isSameVNodeType (oldVNode: VNode, newVNode: VNode) {
+    return oldVNode.type === newVNode.type && oldVNode.key === newVNode.key
+}
 export function isVNode (value: any) {
     return (value ? value.__V_isVNode : false)
 }

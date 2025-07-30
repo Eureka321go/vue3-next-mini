@@ -1,0 +1,23 @@
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <script src="../../../vue/dist/vue.esm.js"></script>
+  <style>
+    .active {
+      color: #2e7db9;
+    }
+    .helloClass {
+      color: #ecc797;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+</div>
+<script>
+  const {h, render, Fragment} = Vue
+  const vnode = h('Fragment', '你好，世界')
+  render(vnode, document.getElementById('app'))
+</script>
+</body>

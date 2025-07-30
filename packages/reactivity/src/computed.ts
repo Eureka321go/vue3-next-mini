@@ -29,7 +29,9 @@ export class ComputedRefImpl<T> {
     constructor (getter) {
         // 内部创建 effect 实例
         this.effect = new ReactiveEffect(getter, () => {
-            // 这是一个scheduler
+
+            //** 这是一个scheduler，触发计算属性scheduler就是脏的情况 **//
+
             if(!this._dirty){ // 仅在非脏状态时触发更新
                 this._dirty = true // 标记需要重新计算
                 triggerRefValue(this)  // 触发页面 effect 的重新执行

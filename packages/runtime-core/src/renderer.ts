@@ -2,8 +2,10 @@ import { isSameVNodeType, VNode } from './vnode'
 import {Comment,Fragment,Text} from './vnode'
 import { ShapeFlags } from '../../shared/src/shapeFlags'
 import { EMPTY_OBJ, isString } from '@vue/shared'
-import { h } from './h'
-import { normalizeVNode } from './componentRenderUtils'
+import { normalizeVNode, renderComponentRoot } from './componentRenderUtils'
+import { createComponentInstance, setupComponent } from './component'
+import { ReactiveEffect } from '@vue/reactivity'
+import { queuePreFlushCb } from './scheduler'
 export interface RendererOptions {
     // 为指定的element 添加的props 打补丁
     patchProp: (el: Element, key: string, prevValue: any, nextValue: any) => void
@@ -39,6 +41,51 @@ function baseCreateRenderer(options: RendererOptions): any {
     } = options;
     const unmount = (vnode: VNode) => {
         hostRemove(vnode.el)
+    }
+    const mountComponent = (initialVNode: VNode, container: Element, anchor: any) => {
+        const instance = (initialVNode.component = createComponentInstance(initialVNode))
+        setupComponent(instance) // 组件的初始化 赋值render函数
+        setupRenderEffect(instance, initialVNode, container, anchor) // 组件的初始化 赋值effect函数
+    }
+    const setupRenderEffect = (instance, initialVNode, container, anchor)=> {
+        const componentUpdateFn = () => {
+            if(!instance.isMounted){
+                const {bm, m} = instance
+                // 调用beforeMount
+                if(bm){
+                    bm()
+                }
+                const subTree = (instance.subTree = renderComponentRoot(instance)) // 调用组件的渲染函数 生成vnode
+                patch(null, subTree, container, anchor) // 组件的渲染函数 生成的vnode 进行挂载
+                // 调用mounted
+                if(m){
+                    m()
+                }
+                initialVNode.el = subTree.el
+                instance.isMounted = true
+            } else {
+                let {next, vnode} = instance
+                if(!next){
+                    next = vnode
+                }
+                const nextTree = renderComponentRoot(instance)
+                const prevTree = instance.subTree
+                patch(prevTree, nextTree, container, anchor)
+                next.el = nextTree.el
+            }
+        }
+        const effect = (instance.effect = new ReactiveEffect(componentUpdateFn, ()=>queuePreFlushCb(update)))
+        const update = instance.update = () => {effect.run()}
+        update()
+    }
+    const processComponent = (oldVNode: VNode, newVNode: VNode, container: Element, anchor: any) => {
+        if (oldVNode == null) {
+            // 挂载
+            mountComponent(newVNode, container, anchor)
+        } else {
+            // 更新
+            // updateComponent(oldVNode, newVNode)
+        }
     }
     const processComment = (oldVNode: VNode, newVNode: VNode, container: Element, anchor: any) => {
         if (oldVNode == null) {
@@ -197,7 +244,7 @@ function baseCreateRenderer(options: RendererOptions): any {
                 if (shapeFlag & ShapeFlags.ELEMENT) {
                    processElement(oldVNode, newVNode, container, anchor)
                 } else if (shapeFlag & ShapeFlags.COMPONENT) {
-
+                    processComponent(oldVNode, newVNode, container, anchor)
                 }
         }
     }

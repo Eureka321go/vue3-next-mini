@@ -9,6 +9,7 @@ export type VNode = {
     children: any,
     el: any,
     key: any,
+    component: any,
     shapeFlag: number, //用 & 或 | 进行判断/组合
     // 用位掩码标记 VNode 和子节点类型。
     // 通过 |（合并）、&（判断）快速确定节点处理逻辑。

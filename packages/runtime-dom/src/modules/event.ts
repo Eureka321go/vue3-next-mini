@@ -3,7 +3,7 @@ export const patchEvent = (
     rawName: string,
     prevValue,
     nextValue) => {
-    // 获取或初始化事件 invokers 的缓存
+    // 获取或初始化事件 invokers 的缓存，_vei 是一个对象，用于缓存事件 invoker
     const invokers = el._vei || (el._vei = {})
     const existingInvoker = invokers[rawName]
     // 当事件更新时，直接修改 invoker.value 而不需要重新绑定事件

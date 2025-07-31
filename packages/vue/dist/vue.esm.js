@@ -474,6 +474,100 @@ var Vue = (function (exports) {
     function cloneIfMounted(child) {
         return child;
     }
+    function renderComponentRoot(instance) {
+        var vnode = instance.vnode, render = instance.render, data = instance.data;
+        var result;
+        try {
+            if (vnode.shapeFlag & 4) {
+                result = normalizeVNode(render.call(data));
+            }
+        }
+        catch (error) {
+            console.log(error);
+        }
+        return result;
+    }
+
+    function injectHook(type, hook, target) {
+        if (target) {
+            target[type] = hook;
+        }
+    }
+    var createHook = function (lifecycle) {
+        return function (hook, target) { return injectHook(lifecycle, hook, target); };
+    };
+    var onBeforeMount = createHook("bm");
+    var onMounted = createHook("m");
+
+    var uuid = 0;
+    function createComponentInstance(vnode) {
+        var type = vnode.type;
+        var instance = {
+            uuid: uuid++,
+            vnode: vnode,
+            type: type,
+            subTree: null,
+            effect: null,
+            update: null,
+            render: null,
+            data: null,
+            isMounted: false,
+            bc: null,
+            c: null,
+            bm: null,
+            m: null,
+        };
+        return instance;
+    }
+    function setupStatefulComponent(instance) {
+        var Component = instance.type;
+        var setup = Component.setup;
+        if (setup) {
+            var setupResult = setup();
+            handleSetupResult(instance, setupResult);
+        }
+        else {
+            finishComponentSetup(instance);
+        }
+    }
+    function handleSetupResult(instance, setupResult) {
+        if (isFunction(setupResult)) {
+            instance.render = setupResult;
+        }
+        finishComponentSetup(instance);
+    }
+    function finishComponentSetup(instance) {
+        if (!instance.render) {
+            instance.render = instance.type.render;
+        }
+        applyOptions(instance);
+    }
+    function setupComponent(instance) {
+        setupStatefulComponent(instance);
+    }
+    function applyOptions(instance) {
+        var _a = instance.type, dataOptions = _a.data, beforeCreate = _a.beforeCreate, created = _a.created, beforeMount = _a.beforeMount, mounted = _a.mounted;
+        if (dataOptions) {
+            var data = dataOptions();
+            if (beforeCreate) {
+                callHook(beforeCreate, data);
+            }
+            if (isObject(data)) {
+                instance.data = reactive(data);
+            }
+        }
+        if (created) {
+            callHook(created, instance.data);
+        }
+        function registerLifecycleHook(register, hook) {
+            register(hook === null || hook === void 0 ? void 0 : hook.bind(instance.data), instance);
+        }
+        registerLifecycleHook(onBeforeMount, beforeMount);
+        registerLifecycleHook(onMounted, mounted);
+    }
+    function callHook(hook, proxy) {
+        hook.bind(proxy)();
+    }
 
     function createRenderer(options) {
         return baseCreateRenderer(options);
@@ -482,6 +576,46 @@ var Vue = (function (exports) {
         var hostPatchProps = options.patchProp, hostSetElementText = options.setElementText, hostInsert = options.insert, hostCreateElement = options.createElement, hostRemove = options.remove, hostCreateText = options.createText, hostSetText = options.setText, hostCreateComment = options.createComment;
         var unmount = function (vnode) {
             hostRemove(vnode.el);
+        };
+        var mountComponent = function (initialVNode, container, anchor) {
+            var instance = (initialVNode.component = createComponentInstance(initialVNode));
+            setupComponent(instance);
+            setupRenderEffect(instance, initialVNode, container, anchor);
+        };
+        var setupRenderEffect = function (instance, initialVNode, container, anchor) {
+            var componentUpdateFn = function () {
+                if (!instance.isMounted) {
+                    var bm = instance.bm, m = instance.m;
+                    if (bm) {
+                        bm();
+                    }
+                    var subTree = (instance.subTree = renderComponentRoot(instance));
+                    patch(null, subTree, container, anchor);
+                    if (m) {
+                        m();
+                    }
+                    initialVNode.el = subTree.el;
+                    instance.isMounted = true;
+                }
+                else {
+                    var next = instance.next, vnode = instance.vnode;
+                    if (!next) {
+                        next = vnode;
+                    }
+                    var nextTree = renderComponentRoot(instance);
+                    var prevTree = instance.subTree;
+                    patch(prevTree, nextTree, container, anchor);
+                    next.el = nextTree.el;
+                }
+            };
+            var effect = (instance.effect = new ReactiveEffect(componentUpdateFn, function () { return queuePreFlushCb(update); }));
+            var update = instance.update = function () { effect.run(); };
+            update();
+        };
+        var processComponent = function (oldVNode, newVNode, container, anchor) {
+            if (oldVNode == null) {
+                mountComponent(newVNode, container, anchor);
+            }
         };
         var processComment = function (oldVNode, newVNode, container, anchor) {
             if (oldVNode == null) {
@@ -613,6 +747,9 @@ var Vue = (function (exports) {
                 default:
                     if (shapeFlag & 1) {
                         processElement(oldVNode, newVNode, container, anchor);
+                    }
+                    else if (shapeFlag & 6) {
+                        processComponent(oldVNode, newVNode, container, anchor);
                     }
             }
         };

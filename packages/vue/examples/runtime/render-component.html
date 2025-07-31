@@ -1,0 +1,30 @@
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <script src="../../../vue/dist/vue.esm.js"></script>
+  <style>
+    .active {
+      color: #2e7db9;
+    }
+    .helloClass {
+      color: #ecc797;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+</div>
+<script>
+  const {h, render} = Vue
+  // 无状态组件挂载
+  // vue把状态比作数据
+  const component = {
+    render() {
+      return h('div', '123')
+    }
+  }
+  const vnode = h(component)
+  render(vnode, document.getElementById('app'))
+</script>
+</body>

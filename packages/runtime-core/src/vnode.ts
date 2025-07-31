@@ -49,6 +49,7 @@ function createBaseVNode(type, props, children, shapeFlag) {
         type,
         props,
         shapeFlag,
+        key: props?.key || null,
     } as VNode
 
     //对children内容进行解析

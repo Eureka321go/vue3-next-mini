@@ -1,0 +1,42 @@
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <script src="../../../vue/dist/vue.esm.js"></script>
+  <style>
+    .active {
+      color: #2e7db9;
+    }
+    .helloClass {
+      color: green;
+      font-size: 30px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+</div>
+<script>
+  const {h, render} = Vue
+  // 无状态组件挂载
+  // vue把状态比作数据
+  const vNode = h('ul', [
+    h('li', {class: 'helloClass', key: 1}, 'a'),
+    h('li', {class: 'helloClass', key: 2}, 'b'),
+    h('li', {class: 'helloClass', key: 3}, 'c'),
+  ])
+  console.log(vNode, document.getElementById('app'))
+  render(vNode, document.getElementById('app'))
+
+  setTimeout(()=>{
+    const vNode = h('ul', [
+      h('li', {class: 'helloClass', key: 1}, 'a'),
+      h('li', {class: 'helloClass', key: 2}, 'b'),
+      h('li', {class: 'helloClass', key: 3}, 'd'),
+    ])
+    console.log(vNode, document.getElementById('app'))
+    render(vNode, document.getElementById('app'))
+  }, 2000)
+</script>
+</body>

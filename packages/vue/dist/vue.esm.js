@@ -416,6 +416,7 @@ var Vue = (function (exports) {
             type: type,
             props: props,
             shapeFlag: shapeFlag,
+            key: (props === null || props === void 0 ? void 0 : props.key) || null,
         };
         normalizeChildren(VNode, children);
         return VNode;
@@ -631,7 +632,7 @@ var Vue = (function (exports) {
                 mountChildren(newVNode.children, container, anchor);
             }
             else {
-                patchChildren(oldVNode, newVNode, container);
+                patchChildren(oldVNode, newVNode, container, anchor);
             }
         };
         var processText = function (oldVNode, newVNode, container, anchor) {
@@ -658,9 +659,9 @@ var Vue = (function (exports) {
                 patchElement(oldVNode, newVNode);
             }
         };
-        var patchElement = function (oldVNode, newVNode, container, anchor) {
+        var patchElement = function (oldVNode, newVNode) {
             var el = (newVNode.el = oldVNode.el);
-            patchChildren(oldVNode, newVNode, el);
+            patchChildren(oldVNode, newVNode, el, null);
             var oldProps = oldVNode.props || EMPTY_OBJ;
             var newProps = newVNode.props || EMPTY_OBJ;
             patchProps(el, newVNode, oldProps, newProps);
@@ -694,13 +695,142 @@ var Vue = (function (exports) {
                 }
             }
             else {
-                if (prevShapeFlag & 16) ;
+                if (prevShapeFlag & 16) {
+                    if (shapeFlag & 16) {
+                        patchKeyedChildren(c1, c2, container, anchor);
+                    }
+                }
                 else {
                     if (prevShapeFlag & 8) {
                         hostSetElementText(container, '');
                     }
                 }
             }
+        };
+        var patchKeyedChildren = function (oldChildren, newChildren, container, parentAnchor) {
+            var i = 0;
+            var newChildrenLength = newChildren.length;
+            var oldChildrenLength = oldChildren.length;
+            var newChildrenEnd = newChildrenLength - 1;
+            var oldChildrenEnd = oldChildrenLength - 1;
+            while (i <= newChildrenEnd && i <= oldChildrenEnd) {
+                var prevVNode = oldChildren[i];
+                var nextVNode = newChildren[i];
+                if (isSameVNodeType(prevVNode, nextVNode)) {
+                    patch(prevVNode, nextVNode, container, null);
+                }
+                else {
+                    break;
+                }
+                i++;
+            }
+            while (i <= oldChildrenEnd && i <= newChildrenEnd) {
+                var prevVNode = oldChildren[oldChildrenEnd];
+                var nextVNode = newChildren[newChildrenEnd];
+                if (isSameVNodeType(prevVNode, nextVNode)) {
+                    patch(prevVNode, nextVNode, container, null);
+                }
+                else {
+                    break;
+                }
+                oldChildrenEnd--;
+                newChildrenEnd--;
+            }
+            if (i > oldChildrenEnd) {
+                if (i <= newChildrenEnd) {
+                    var nextPos = newChildrenEnd + 1;
+                    var anchor = nextPos < newChildrenLength ? newChildren[nextPos].el : parentAnchor;
+                    while (i <= newChildrenEnd) {
+                        patch(null, normalizeVNode(newChildren[i]), container, anchor);
+                        i++;
+                    }
+                }
+            }
+            else if (i > newChildrenEnd) {
+                while (i <= oldChildrenEnd) {
+                    unmount(oldChildren[i]);
+                    i++;
+                }
+            }
+            else {
+                var oldStartIndex = i;
+                var newStartIndex = i;
+                var keyToNewIndexMap = new Map();
+                for (i = newStartIndex; i <= newChildrenEnd; i++) {
+                    var nextChild = normalizeVNode(newChildren[i]);
+                    if (nextChild.key != null) {
+                        keyToNewIndexMap.set(nextChild.key, i);
+                    }
+                }
+                var j = void 0;
+                var patched = 0;
+                var toBePatched = newChildrenEnd - newStartIndex + 1;
+                var moved = false;
+                var maxNewIndexSoFar = 0;
+                var newIndexToOldIndexMap = new Array(toBePatched);
+                for (i = 0; i < toBePatched; i++)
+                    newIndexToOldIndexMap[i] = 0;
+                for (i = oldStartIndex; i <= oldChildrenEnd; i++) {
+                    var prevChild = oldChildren[i];
+                    if (patched >= toBePatched) {
+                        unmount(prevChild);
+                        continue;
+                    }
+                    var newIndex = void 0;
+                    if (prevChild.key != null) {
+                        newIndex = keyToNewIndexMap.get(prevChild.key);
+                    }
+                    else {
+                        for (j = newStartIndex; j <= newChildrenEnd; j++) {
+                            if (newIndexToOldIndexMap[j - newStartIndex] === 0 &&
+                                isSameVNodeType(prevChild, newChildren[j])) {
+                                newIndex = j;
+                                break;
+                            }
+                        }
+                    }
+                    if (newIndex === undefined) {
+                        unmount(prevChild);
+                    }
+                    else {
+                        newIndexToOldIndexMap[newIndex - newStartIndex] = i + 1;
+                        if (newIndex >= maxNewIndexSoFar) {
+                            maxNewIndexSoFar = newIndex;
+                        }
+                        else {
+                            moved = true;
+                        }
+                        patch(prevChild, newChildren[newIndex], container, null);
+                        patched++;
+                    }
+                }
+                var increasingNewIndexSequence = moved
+                    ? getSequence(newIndexToOldIndexMap)
+                    : [];
+                j = increasingNewIndexSequence.length - 1;
+                for (i = toBePatched - 1; i >= 0; i--) {
+                    var nextIndex = newStartIndex + i;
+                    var nextChild = newChildren[nextIndex];
+                    var anchor = nextIndex + 1 < newChildrenLength
+                        ? newChildren[nextIndex + 1].el
+                        : parentAnchor;
+                    if (newIndexToOldIndexMap[i] === 0) {
+                        patch(null, nextChild, container, anchor);
+                    }
+                    else if (moved) {
+                        if (j < 0 || i !== increasingNewIndexSequence[j]) {
+                            move(nextChild, container, anchor);
+                        }
+                        else {
+                            j--;
+                        }
+                    }
+                }
+            }
+        };
+        var move = function (vnode, container, anchor) {
+            var el = vnode.el;
+            hostInsert(el, container, anchor);
         };
         var mountChildren = function (children, container, anchor) {
             if (isString(children)) {
@@ -716,6 +846,9 @@ var Vue = (function (exports) {
             var el = (vnode.el = hostCreateElement(type));
             if (shapeFlag & 8) {
                 hostSetElementText(el, vnode.children);
+            }
+            else {
+                mountChildren(vnode.children, el, null);
             }
             if (props) {
                 for (var key in props) {
@@ -767,6 +900,47 @@ var Vue = (function (exports) {
         return {
             render: render
         };
+    }
+    function getSequence(arr) {
+        var p = arr.slice();
+        var result = [0];
+        var i, j, u, v, c;
+        var len = arr.length;
+        for (i = 0; i < len; i++) {
+            var arrI = arr[i];
+            if (arrI !== 0) {
+                j = result[result.length - 1];
+                if (arr[j] < arrI) {
+                    p[i] = j;
+                    result.push(i);
+                    continue;
+                }
+                u = 0;
+                v = result.length - 1;
+                while (u < v) {
+                    c = (u + v) >> 1;
+                    if (arr[result[c]] < arrI) {
+                        u = c + 1;
+                    }
+                    else {
+                        v = c;
+                    }
+                }
+                if (arrI < arr[result[u]]) {
+                    if (u > 0) {
+                        p[i] = result[u - 1];
+                    }
+                    result[u] = i;
+                }
+            }
+        }
+        u = result.length;
+        v = result[u - 1];
+        while (u-- > 0) {
+            result[u] = v;
+            v = p[v];
+        }
+        return result;
     }
 
     var doc = document;
